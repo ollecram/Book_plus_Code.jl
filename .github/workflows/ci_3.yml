@@ -1,0 +1,49 @@
+name: Test, Generazione Grafici e Compilazione Libro
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Verifica Julia, genera grafici e compila PDF
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Scarica l'intero repository (sia code/ che doc/)
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+
+      # 2. Installa Julia
+      - name: Installa Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+
+      # 3. Installa i pacchetti e lancia i test (che generano anche i grafici)
+      - name: Esegui test e genera grafici
+        uses: julia-actions/julia-runtest@v1
+        with:
+          project: code
+
+      # 4. Esegue uno script dedicato se non tutti i grafici sono nei test
+      # Sblocca le righe seguenti se crei uno script "code/genera_tutti_grafici.jl"
+      - name: Genera tutti i grafici del libro
+        run: julia --project=code code/genera_tutti_grafici.jl
+
+      # 5. Compila LaTeX usando i grafici appena generati in doc/figures/
+      - name: Compila documento LaTeX
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main.tex
+          working_directory: doc
+
+      # 6. Salva il PDF finale per il download
+      - name: Carica il PDF come Artifact scaricabile
+        uses: actions/upload-artifact@v4
+        with:
+          name: bozza-libro-pdf
+          path: doc/main.pdf
+

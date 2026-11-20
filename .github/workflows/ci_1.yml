@@ -1,0 +1,47 @@
+name: Test Julia e Compilazione Libro
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-julia:
+    name: Esegui test codice Julia
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+
+      - name: Installa Julia
+        uses: julia-actions/setup-julia@v2
+        with:
+          version: '1' # Usa l'ultima versione stabile di Julia
+
+      - name: Installa dipendenze ed esegui i test
+        uses: julia-actions/julia-runtest@v1
+        with:
+          project: code # Indica che Project.toml si trova nella cartella code/
+
+  build-book:
+    name: Compila LaTeX in PDF
+    runs-on: ubuntu-latest
+    # Compila il PDF solo se i test di Julia sono passati con successo
+    needs: test-julia 
+    steps:
+      - name: Scarica il repository
+        uses: actions/checkout@v4
+
+      - name: Compila documento LaTeX
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: main.tex
+          working_directory: doc # Indica che main.tex si trova nella cartella doc/
+
+      - name: Carica il PDF come Artifact scaricabile
+        uses: actions/upload-artifact@v4
+        with:
+          name: bozza-libro-pdf
+          path: doc/main.pdf
+
